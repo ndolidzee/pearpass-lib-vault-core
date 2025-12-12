@@ -32,8 +32,7 @@ export const validateAndSanitizePath = (rawPath) => {
     throw new Error('Storage path contains invalid null bytes')
   }
 
-  // Reject relative paths - only absolute paths are allowed
-  if (!cleanPath.startsWith('/')) {
+  if (!barePath.isAbsolute(cleanPath)) {
     throw new Error('Storage path must be an absolute path')
   }
 
