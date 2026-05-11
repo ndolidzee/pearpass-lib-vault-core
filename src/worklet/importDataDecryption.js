@@ -1,7 +1,7 @@
 // import './utils/setupWorkletCrypto.js'
 // import { argon2id, argon2d } from '@noble/hashes/argon2'
 // import * as _kdbxweb from 'kdbxweb'
-// // import crypto from 'bare-crypto'
+import crypto from 'bare-crypto'
 
 // import { decryptExportData } from './exportDataEncryption'
 
