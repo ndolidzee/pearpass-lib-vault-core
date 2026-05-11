@@ -1,11 +1,12 @@
 import './utils/setupWorkletCrypto.js'
-import { argon2id, argon2d } from 'hash-wasm'
+import { argon2id, argon2d } from '@noble/hashes/argon2'
 import * as _kdbxweb from 'kdbxweb'
 
-import crypto from 'crypto'
+import { sha256 } from '@noble/hashes/sha256'
+import { hmac } from '@noble/hashes/hmac'
+import { pbkdf2 } from '@noble/hashes/pbkdf2'
+import { cbc } from '@noble/ciphers/aes'
 import { decryptExportData } from './exportDataEncryption'
-
-const { createHash, createHmac, createDecipheriv, pbkdf2Sync } = crypto
 
 const kdbxweb = _kdbxweb.default || _kdbxweb
 
@@ -17,14 +18,11 @@ kdbxweb.CryptoEngine.setArgon2Impl(
   (password, salt, memory, iterations, length, parallelism, type) => {
     const hashFn =
       type === kdbxweb.CryptoEngine.Argon2TypeArgon2id ? argon2id : argon2d
-    return hashFn({
-      password: new Uint8Array(password),
-      salt: new Uint8Array(salt),
-      memorySize: memory,
-      iterations,
-      hashLength: length,
-      parallelism,
-      outputType: 'binary'
+    return hashFn(new Uint8Array(password), new Uint8Array(salt), {
+      t: iterations,
+      m: memory,
+      p: parallelism,
+      dkLen: length
     })
   }
 )
@@ -68,10 +66,11 @@ const decryptKeePassKdbx = async (arrayBuffer, password) => {
 
 // HKDF-Expand for a single 32-byte block (RFC 5869, SHA-256 PRF)
 const hkdfExpand32 = (prk, info) => {
-  const prkBuf = Buffer.isBuffer(prk) ? prk : Buffer.from(new Uint8Array(prk))
-  return createHmac('sha256', prkBuf)
-    .update(Buffer.concat([Buffer.from(info, 'utf8'), Buffer.from([1])]))
-    .digest()
+  const infoBytes = Buffer.from(info, 'utf8')
+  const data = new Uint8Array(infoBytes.length + 1)
+  data.set(infoBytes)
+  data[infoBytes.length] = 1
+  return hmac(sha256, prk, data)
 }
 
 const timingSafeEqual = (a, b) => {
@@ -97,13 +96,14 @@ const parseBitwardenCipherString = (cipherString) => {
 const aesCbcDecrypt = (cipherString, encKey, macKey) => {
   const { iv, ct, mac } = parseBitwardenCipherString(cipherString)
 
-  const expectedMac = createHmac('sha256', macKey)
-    .update(Buffer.concat([iv, ct]))
-    .digest()
+  const combined = new Uint8Array(iv.length + ct.length)
+  combined.set(iv)
+  combined.set(ct, iv.length)
+  const expectedMac = hmac(sha256, macKey, combined)
   if (!timingSafeEqual(expectedMac, mac)) throw new Error('Incorrect password')
 
-  const decipher = createDecipheriv('aes-256-cbc', encKey, iv)
-  return Buffer.concat([decipher.update(ct), decipher.final()]).toString('utf8')
+  const decrypted = cbc(encKey, iv).decrypt(ct)
+  return Buffer.from(decrypted).toString('utf8')
 }
 
 /**
@@ -127,18 +127,18 @@ const decryptBitwardenVault = async (encryptedText, password) => {
 
   let masterKey
   if (kdfType === 0) {
-    masterKey = pbkdf2Sync(passwordBuf, salt, json.kdfIterations, 32, 'sha256')
+    masterKey = pbkdf2(sha256, passwordBuf, salt, {
+      c: json.kdfIterations,
+      dkLen: 32
+    })
   } else if (kdfType === 1) {
     // Argon2id: Bitwarden pre-hashes the salt with SHA-256
-    const saltHashed = createHash('sha256').update(salt).digest()
-    masterKey = await argon2id({
-      password: new Uint8Array(passwordBuf),
-      salt: new Uint8Array(saltHashed),
-      parallelism: json.kdfParallelism ?? 4,
-      iterations: json.kdfIterations,
-      memorySize: (json.kdfMemory ?? 64) * 1024,
-      hashLength: 32,
-      outputType: 'binary'
+    const saltHashed = sha256(salt)
+    masterKey = argon2id(new Uint8Array(passwordBuf), saltHashed, {
+      t: json.kdfIterations,
+      m: (json.kdfMemory ?? 64) * 1024,
+      p: json.kdfParallelism ?? 4,
+      dkLen: 32
     })
   } else {
     throw new Error(`Unsupported KDF type: ${kdfType}`)
