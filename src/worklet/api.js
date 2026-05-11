@@ -60,7 +60,9 @@ export const API = {
   ADD_OTP_TO_RECORD: 58,
   REMOVE_OTP_FROM_RECORD: 59,
 
-  SET_LOG_OPTIONS: 60
+  SET_LOG_OPTIONS: 60,
+
+  ENCRYPTION_DECRYPT_IMPORT_DATA: 61
 }
 
 export const API_BY_VALUE = Object.entries(API).reduce((acc, [key, value]) => {

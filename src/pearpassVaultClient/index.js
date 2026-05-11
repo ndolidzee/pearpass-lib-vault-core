@@ -785,6 +785,20 @@ export class PearpassVaultClient extends EventEmitter {
   }
 
   /**
+   * Decrypts an encrypted import file.
+   * @param {string} data - Base64-encoded binary for 'keepass'; JSON string for 'bitwarden' / 'pearpass'
+   * @param {string} password
+   * @param {'keepass'|'bitwarden'|'pearpass'} format
+   * @returns {Promise<object|Array>}
+   */
+  async decryptImportData(data, password, format) {
+    return this._handleRequest({
+      command: API.ENCRYPTION_DECRYPT_IMPORT_DATA,
+      data: { data, password, format }
+    })
+  }
+
+  /**
    * Generates OTP codes for a list of record IDs.
    * @param {string[]} recordIds
    * @returns {Promise<Array<{ recordId: string, code: string, timeRemaining?: number }>>}

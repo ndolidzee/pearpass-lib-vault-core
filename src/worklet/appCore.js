@@ -56,6 +56,7 @@ import { decryptVaultKey } from './decryptVaultKey'
 import { encryptVaultKeyWithHashedPassword } from './encryptVaultKeyWithHashedPassword'
 import { encryptVaultWithKey } from './encryptVaultWithKey'
 import { encryptExportData, decryptExportData } from './exportDataEncryption'
+import { decryptImportData } from './importDataDecryption'
 import { faviconManager } from './faviconManager'
 import { getDecryptionKey } from './getDecryptionKey'
 import { hashPassword } from './hashPassword'
@@ -995,6 +996,23 @@ export const handleRpcCommand = async (req) => {
         req.reply(
           JSON.stringify({
             error: `Error removing OTP from record: ${error}`
+          })
+        )
+      }
+
+      break
+
+    case API.ENCRYPTION_DECRYPT_IMPORT_DATA:
+      try {
+        const { data, password, format } = requestData
+
+        const result = await decryptImportData(data, password, format)
+
+        req.reply(JSON.stringify({ data: result }))
+      } catch (error) {
+        req.reply(
+          JSON.stringify({
+            error: `Error decrypting import data: ${error.message || error}`
           })
         )
       }

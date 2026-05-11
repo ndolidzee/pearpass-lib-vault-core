@@ -36,6 +36,8 @@
     "otpauth": "^9.5.0",
     "rocksdb-native": "^3.11.4",
     "sodium-native": "^5.0.10",
+    "hash-wasm": "^4.12.0",
+    "kdbxweb": "^2.1.1",
     "suspendify": "^1.7.1",
     "udx-native": "^1.19.2"
   },
