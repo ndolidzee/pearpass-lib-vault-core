@@ -5,7 +5,7 @@
  *
  * On environments where crypto.subtle already exists this is a no-op.
  */
-import crypto from 'bare-crypto'
+import crypto from 'crypto'
 
 const {
   createHash,

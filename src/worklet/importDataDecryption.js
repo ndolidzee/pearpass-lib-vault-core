@@ -1,8 +1,8 @@
-// import './utils/setupWorkletCrypto.js'
+import './utils/setupWorkletCrypto.js'
 import { argon2id, argon2d } from 'hash-wasm'
 import * as _kdbxweb from 'kdbxweb'
 
-import crypto from 'bare-crypto'
+import crypto from 'crypto'
 import { decryptExportData } from './exportDataEncryption'
 
 const { createHash, createHmac, createDecipheriv, pbkdf2Sync } = crypto
