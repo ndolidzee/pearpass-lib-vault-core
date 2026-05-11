@@ -1,4 +1,4 @@
-import './utils/setupWorkletCrypto.js'
+// import './utils/setupWorkletCrypto.js'
 import { argon2id, argon2d } from 'hash-wasm'
 import * as _kdbxweb from 'kdbxweb'
 
